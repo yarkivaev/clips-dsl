@@ -1,0 +1,83 @@
+version: 1
+output: build/output.mp4
+
+clips:
+  - id: station_departure
+    source: 1
+    from: 0
+    to: 15
+
+  - id: rain_center
+    source: 6
+    from: 60
+    to: 90
+
+  - id: trucks_splash
+    source: 8
+    from: 0
+    to: 25
+
+  - id: daniel_camera
+    source: 11
+    from: 0
+    to: 4
+
+  - id: sunset_road
+    source: 16
+    from: 0
+    to: 20
+
+  - id: mushroom_camp
+    source: 18
+    from: 30
+    to: 60
+
+  - id: tent_scared
+    source: 23
+    from: 0
+    to: 20
+
+  - id: rock_view
+    source: 29
+    from: 0
+    to: 15
+
+  - id: timelapse_mix
+    source: 35
+    from: 0
+    to: 25
+
+  - id: mud_fall
+    source: 47
+    from: 120
+    to: 150
+
+  - id: raft_fun
+    source: 50
+    from: 0
+    to: 20
+
+  - id: beavers
+    source: 53
+    from: 60
+    to: 90
+
+  - id: sortavala
+    source: 59
+    from: 0
+    to: 20
+
+  - id: anton_climb
+    source: 60
+    from: 0
+    to: 15
+
+  - id: cows
+    source: 66
+    from: 0
+    to: 15
+
+  - id: finale
+    source: 67
+    from: 0
+    to: 30

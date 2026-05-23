@@ -11,9 +11,23 @@ OUT_DIR ?=
 
 FILES := $(sort $(wildcard $(PATTERN)))
 
-.PHONY: all link clean help
+.PHONY: all link clean help test film film-clean film-validate
 
 all: link
+
+test:
+	mvn -q test
+
+film: test
+	mvn -q package
+	java -jar target/film-1.0.0.jar film.dsl.yaml
+
+film-clean:
+	rm -rf build/
+
+film-validate:
+	mvn -q package
+	java -jar target/film-1.0.0.jar film.dsl.yaml --validate
 
 help:
 	@echo "Targets:"
