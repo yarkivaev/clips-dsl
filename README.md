@@ -33,7 +33,7 @@ tail -f build/logs/film.log
 
 ## Edit DSL
 
-Edit [`film.dsl.yaml`](film.dsl.yaml): each clip has stable `id`, `source` (symlink number), optional `from` / `to` seconds. Scene notes: [`explain.txt`](explain.txt).
+Edit [`film.dsl.yaml`](film.dsl.yaml): each clip has stable `id`, `source` (symlink number), optional `from` (seconds on source), end bound as **`to`** (absolute second on source) **or** **`duration`** (length from `from`; do not use both), optional `speed` (1.0 = normal, 2.0 = double speed). Times are in seconds (`300` or YAML `5:00` → 300). Output length is about `(to − from) / speed` or `duration / speed`. Scene notes: [`explain.txt`](explain.txt).
 
 Validate without ffmpeg:
 
@@ -43,7 +43,7 @@ make film-validate
 
 ## Incremental rebuild
 
-Changing one clip’s `from` / `to` re-renders only that id and re-concats. Unchanged fingerprints are skipped. Reordering clips re-concats only.
+Changing one clip’s `from`, `to`, or `duration` re-renders only that id and re-concats. Unchanged fingerprints are skipped. Reordering clips re-concats only.
 
 Clips and the final join are encoded as **h264/aac** (not stream copy) so VLC does not freeze when timestamps differ between DJI segments.
 

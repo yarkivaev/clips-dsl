@@ -7,7 +7,7 @@ import film.domain.port.Clip;
 import java.nio.file.Path;
 
 /**
- * Cuts a segment to 30 fps h264/aac with zero-based pts.
+ * Cuts a segment to 30 fps h264/aac with optional pace and zero-based pts.
  */
 public final class FfmpegClip implements Clip {
     private final FfmpegProcess ffmpeg;
@@ -18,16 +18,26 @@ public final class FfmpegClip implements Clip {
     public void cut(final SegmentSpec spec, final Second end, final Path workspace, final Path dest) {
         final Path input = workspace.resolve(spec.source().filename()).normalize();
         final String id = spec.id().label();
+        final double start = spec.from().amount();
+        final double stop = end.amount();
+        final double span = stop - start;
+        if (span <= 0) {
+            throw new IllegalStateException(
+                "segment span must be positive for " + id + " from " + start + " to " + stop
+            );
+        }
+        final String video = "fps=30,format=yuv420p,setpts=PTS-STARTPTS" + spec.pace().videoSuffix();
+        final String audio = spec.pace().audioChain();
         final ProcessBuilder builder = new ProcessBuilder(
             "ffmpeg",
             "-y",
             "-nostats",
             "-loglevel", "info",
-            "-i", input.toString(),
             "-ss", spec.from().ffmpeg(),
-            "-to", end.ffmpeg(),
-            "-vf", "fps=30,format=yuv420p,setpts=PTS-STARTPTS",
-            "-af", "aresample=48000,asetpts=PTS-STARTPTS",
+            "-t", Double.toString(span),
+            "-i", input.toString(),
+            "-vf", video,
+            "-af", audio,
             "-c:v", "libx264",
             "-preset", "fast",
             "-crf", "22",

@@ -2,6 +2,8 @@ package film.domain.model.scenario;
 
 import film.domain.model.AtSecond;
 import film.domain.model.BuildTasks;
+import film.domain.model.Cut;
+import film.domain.model.Pace;
 import film.domain.model.CachedClip;
 import film.domain.model.Fingerprint;
 import film.domain.model.Manifest;
@@ -25,14 +27,12 @@ public final class UnchangedFingerprintScenario {
         final SegmentSpec alpha = new SegmentSpec(
             new SegmentId("alpha"),
             new SourceRef(1),
-            new Second(0),
-            new AtSecond(new Second(10))
+            new Cut(new Second(0), new AtSecond(new Second(10)), Pace.one())
         );
         final SegmentSpec beta = new SegmentSpec(
             new SegmentId("beta"),
             new SourceRef(2),
-            new Second(5),
-            new AtSecond(new Second(15))
+            new Cut(new Second(5), new AtSecond(new Second(15)), Pace.one())
         );
         final ResolvedEnds ends = new ResolvedEnds(
             Map.of(

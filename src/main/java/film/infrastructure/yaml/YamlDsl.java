@@ -2,7 +2,10 @@ package film.infrastructure.yaml;
 
 import film.domain.model.AtEof;
 import film.domain.model.AtSecond;
+import film.domain.model.AtSpan;
+import film.domain.model.Cut;
 import film.domain.model.CutEnd;
+import film.domain.model.Pace;
 import film.domain.model.OpenedDsl;
 import film.domain.model.Second;
 import film.domain.model.SegmentId;
@@ -51,18 +54,34 @@ public final class YamlDsl implements Dsl {
         final String id = string(map, "id");
         final int source = asInt(map, "source");
         final double from = map.containsKey("from") ? asDouble(map, "from") : 0;
-        final CutEnd end;
-        if (map.containsKey("to")) {
-            end = new AtSecond(new Second(asDouble(map, "to")));
+        final CutEnd end = end(map);
+        final Pace pace;
+        if (map.containsKey("speed")) {
+            pace = new Pace(asDouble(map, "speed"));
         } else {
-            end = AtEof.INSTANCE;
+            pace = Pace.one();
         }
         return new SegmentSpec(
             new SegmentId(id),
             new SourceRef(source),
-            new Second(from),
-            end
+            new Cut(new Second(from), end, pace)
         );
+    }
+    private static CutEnd end(final Map<String, Object> map) {
+        final boolean hasTo = map.containsKey("to");
+        final boolean hasDuration = map.containsKey("duration");
+        if (hasTo && hasDuration) {
+            throw new IllegalStateException(
+                "clip " + map.get("id") + " cannot set both to and duration"
+            );
+        }
+        if (hasTo) {
+            return new AtSecond(new Second(asDouble(map, "to")));
+        }
+        if (hasDuration) {
+            return new AtSpan(new Second(asDouble(map, "duration")));
+        }
+        return AtEof.INSTANCE;
     }
     private static void validateUniqueIds(final List<SegmentSpec> segments) {
         final Set<String> seen = new LinkedHashSet<>();

@@ -1,25 +1,18 @@
 package film.domain.model;
 
 /**
- * One clip definition: source file and in/out bounds.
+ * One clip definition: source file, bounds, and optional pace.
  *
- * <p>Usage: {@code new SegmentSpec(id, source, from, new AtSecond(to))}
+ * <p>Usage: {@code new SegmentSpec(id, source, new Cut(from, end, Pace.one()))}
  */
 public final class SegmentSpec {
     private final SegmentId id;
     private final SourceRef source;
-    private final Second from;
-    private final CutEnd end;
-    public SegmentSpec(
-        final SegmentId id,
-        final SourceRef source,
-        final Second from,
-        final CutEnd end
-    ) {
+    private final Cut cut;
+    public SegmentSpec(final SegmentId id, final SourceRef source, final Cut cut) {
         this.id = id;
         this.source = source;
-        this.from = from;
-        this.end = end;
+        this.cut = cut;
     }
     public SegmentId id() {
         return id;
@@ -28,10 +21,13 @@ public final class SegmentSpec {
         return source;
     }
     public Second from() {
-        return from;
+        return cut.from();
     }
     public CutEnd end() {
-        return end;
+        return cut.end();
+    }
+    public Pace pace() {
+        return cut.pace();
     }
     public Fingerprint fingerprint(final Second resolvedEnd) {
         return new Fingerprint(this, resolvedEnd);

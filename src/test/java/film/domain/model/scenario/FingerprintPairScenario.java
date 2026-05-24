@@ -1,7 +1,9 @@
 package film.domain.model.scenario;
 
 import film.domain.model.AtSecond;
+import film.domain.model.Cut;
 import film.domain.model.Fingerprint;
+import film.domain.model.Pace;
 import film.domain.model.Second;
 import film.domain.model.SegmentId;
 import film.domain.model.SegmentSpec;
@@ -16,8 +18,7 @@ public final class FingerprintPairScenario {
         final SegmentSpec spec = new SegmentSpec(
             new SegmentId("clip"),
             new SourceRef(3),
-            new Second(1),
-            new AtSecond(new Second(9))
+            new Cut(new Second(1), new AtSecond(new Second(9)), Pace.one())
         );
         final Second end = new Second(9);
         final Fingerprint left = spec.fingerprint(end);

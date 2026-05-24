@@ -16,7 +16,8 @@ public final class Fingerprint {
         final String raw = spec.source().number()
             + "|" + spec.from().amount()
             + "|" + resolvedEnd.amount()
-            + "|x264-fps30";
+            + "|" + spec.pace().label()
+            + "|x264-fps30-inseek";
         this.digest = sha256(raw);
     }
     public Fingerprint(final String digest) {

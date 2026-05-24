@@ -1,3 +1,7 @@
 build/
 target/
 .scratch/
+*.LRF
+.metals/
+.vscode/
+[0-9]*
