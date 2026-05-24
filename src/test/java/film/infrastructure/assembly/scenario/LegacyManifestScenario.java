@@ -8,7 +8,7 @@ import film.domain.model.SegmentSpec;
 import film.domain.model.Timeline;
 import film.domain.model.VacantAssemblySnapshot;
 import film.domain.port.AssemblyPlan;
-import film.infrastructure.assembly.ChunkAssembly;
+import film.infrastructure.assembly.TreeAssembly;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -24,7 +24,9 @@ public final class LegacyManifestScenario {
         final ResolvedEnds ends = AssemblyTimelineFixture.ends(timeline);
         final Manifest prior = manifestFor(timeline, ends, workspace);
         final Map<SegmentId, Path> clips = clipPaths(timeline, workspace);
-        final AssemblyPlan plan = new ChunkAssembly(8).planned(
+        final AssemblyPlan plan = new TreeAssembly(
+            4, AssemblyTimelineFixture.profile(), AssemblyTimelineFixture.contract()
+        ).planned(
             prior,
             timeline,
             ends,
@@ -47,10 +49,10 @@ public final class LegacyManifestScenario {
             final Path path = workspace.resolve("build/clips/" + spec.id().label() + ".mp4");
             clips.put(
                 spec.id(),
-                new CachedClip(spec.id(), spec.fingerprint(ends.end(spec)), path)
+                new CachedClip(spec.id(), spec.fingerprint(ends.end(spec), AssemblyTimelineFixture.profile(), AssemblyTimelineFixture.contract()), path)
             );
         }
-        return new Manifest(new VacantAssemblySnapshot(), clips);
+        return new Manifest(AssemblyTimelineFixture.profile(), new VacantAssemblySnapshot(), clips);
     }
     private static Map<SegmentId, Path> clipPaths(final Timeline timeline, final Path workspace) {
         final Map<SegmentId, Path> clips = new HashMap<>();

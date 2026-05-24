@@ -9,29 +9,52 @@ import java.util.Map;
  * Snapshot of the last successful build for incremental diff.
  */
 public final class Manifest {
+    private final RenderProfile profile;
     private final AssemblySnapshot assembly;
     private final Map<SegmentId, CachedClip> clips;
-    public Manifest(final AssemblySnapshot assembly, final Map<SegmentId, CachedClip> clips) {
+    public Manifest(
+        final RenderProfile profile,
+        final AssemblySnapshot assembly,
+        final Map<SegmentId, CachedClip> clips
+    ) {
+        this.profile = profile;
         this.assembly = assembly;
         this.clips = Map.copyOf(clips);
     }
-    public static Manifest empty() {
-        return new Manifest(new VacantAssemblySnapshot(), Collections.emptyMap());
+    public static Manifest empty(final RenderProfile profile) {
+        return new Manifest(profile, new VacantAssemblySnapshot(), Collections.emptyMap());
     }
-    public PlanDiff diff(final Timeline desired, final ResolvedEnds ends) {
-        return new PlanDiff(this, desired, ends);
+    public PlanDiff diff(
+        final Timeline desired,
+        final ResolvedEnds ends,
+        final RenderProfile profile,
+        final MediaContract contract
+    ) {
+        return new PlanDiff(this, desired, ends, profile, contract);
     }
-    public boolean cached(final SegmentId id, final Fingerprint wanted) {
+    public boolean cached(
+        final SegmentId id,
+        final Fingerprint wanted
+    ) {
+        if (!profileMatches(profile)) {
+            return false;
+        }
         if (!clips.containsKey(id)) {
             return false;
         }
         return clips.get(id).fingerprint().matches(wanted);
+    }
+    public boolean profileMatches(final RenderProfile wanted) {
+        return profile.label().equals(wanted.label());
     }
     public Path path(final SegmentId id) {
         if (!clips.containsKey(id)) {
             throw new IllegalStateException("missing cached clip for segment " + id.label());
         }
         return clips.get(id).path();
+    }
+    public RenderProfile profile() {
+        return profile;
     }
     public AssemblySnapshot assembly() {
         return assembly;
@@ -42,6 +65,8 @@ public final class Manifest {
     public Manifest saved(
         final Timeline desired,
         final ResolvedEnds ends,
+        final RenderProfile profile,
+        final MediaContract contract,
         final Map<SegmentId, Path> artifacts,
         final AssemblySnapshot assemblySnapshot
     ) {
@@ -51,8 +76,15 @@ public final class Manifest {
             if (path == null) {
                 throw new IllegalStateException("missing artifact path for segment " + spec.id().label());
             }
-            next.put(spec.id(), new CachedClip(spec.id(), spec.fingerprint(ends.end(spec)), path));
+            next.put(
+                spec.id(),
+                new CachedClip(
+                    spec.id(),
+                    spec.fingerprint(ends.end(spec), profile, contract),
+                    path
+                )
+            );
         }
-        return new Manifest(assemblySnapshot, next);
+        return new Manifest(profile, assemblySnapshot, next);
     }
 }

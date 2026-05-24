@@ -61,11 +61,15 @@ public final class BuildTasks {
         final Path clipsDir,
         final Path partsDir,
         final Path output,
-        final Manifest prior
+        final Manifest prior,
+        final BuildSettings settings
     ) {
         final Map<SegmentId, Path> artifacts = new HashMap<>();
         for (final SegmentSpec spec : timeline.segments()) {
-            if (prior.cached(spec.id(), spec.fingerprint(ends.end(spec)))) {
+            if (prior.cached(
+                spec.id(),
+                spec.fingerprint(ends.end(spec), settings.profile(), settings.contract())
+            )) {
                 artifacts.put(spec.id(), prior.path(spec.id()));
             }
         }

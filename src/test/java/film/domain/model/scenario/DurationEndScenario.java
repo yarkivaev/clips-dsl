@@ -2,6 +2,7 @@ package film.domain.model.scenario;
 
 import film.domain.model.AtSpan;
 import film.domain.model.Cut;
+import film.domain.model.Edits;
 import film.domain.model.Pace;
 import film.domain.model.Second;
 import film.domain.model.SegmentId;
@@ -20,7 +21,7 @@ public final class DurationEndScenario {
         final SegmentSpec spec = new SegmentSpec(
             new SegmentId("clip"),
             new SourceRef(3),
-            new Cut(new Second(10), new AtSpan(new Second(20)), Pace.one())
+            new Cut(new Second(10), new AtSpan(new Second(20)), Pace.one(), Edits.none())
         );
         final Duration duration = (source, workspace) -> new Second(999);
         final Second end = spec.end().resolved(spec, duration, Path.of("."));

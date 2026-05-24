@@ -3,6 +3,7 @@ package film.infrastructure.manifest;
 import film.domain.model.CachedClip;
 import film.domain.model.Fingerprint;
 import film.domain.model.Manifest;
+import film.domain.model.RenderProfile;
 import film.domain.model.SegmentId;
 import film.domain.port.ManifestFile;
 import film.infrastructure.assembly.AssemblyCodec;
@@ -21,6 +22,7 @@ public final class JsonManifest implements ManifestFile {
     private static final Pattern CLIP_LINE = Pattern.compile(
         "\\s*\"([^\"]+)\"\\s*:\\s*\\{\\s*\"digest\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"path\"\\s*:\\s*\"([^\"]+)\"\\s*\\}"
     );
+    private static final Pattern PROFILE = Pattern.compile("\"profile\"\\s*:\\s*\"([^\"]+)\"");
     private final Path file;
     private final AssemblyCodec codec;
     public JsonManifest(final Path workspace) {
@@ -28,14 +30,18 @@ public final class JsonManifest implements ManifestFile {
         this.codec = new AssemblyCodec();
     }
     @Override
-    public Manifest loaded() {
+    public Manifest loaded(final RenderProfile profile) {
         if (!Files.isRegularFile(file)) {
-            return Manifest.empty();
+            return Manifest.empty(profile);
         }
         try {
             final String text = Files.readString(file);
+            final RenderProfile stored = readProfile(text);
+            if (!stored.label().equals(profile.label())) {
+                return Manifest.empty(profile);
+            }
             final Map<SegmentId, CachedClip> clips = readClips(text);
-            return new Manifest(codec.loaded(text), clips);
+            return new Manifest(stored, codec.loaded(text), clips);
         } catch (final java.io.IOException ex) {
             throw new IllegalStateException("cannot read manifest " + file, ex);
         }
@@ -46,6 +52,9 @@ public final class JsonManifest implements ManifestFile {
             Files.createDirectories(file.getParent());
             final StringBuilder json = new StringBuilder();
             json.append("{\n");
+            json.append("  \"profile\": \"");
+            json.append(manifest.profile().label());
+            json.append("\",\n");
             json.append("  \"clips\": {\n");
             boolean first = true;
             for (final Map.Entry<SegmentId, CachedClip> entry : manifest.clips().entrySet()) {
@@ -73,6 +82,13 @@ public final class JsonManifest implements ManifestFile {
         } catch (final java.io.IOException ex) {
             throw new IllegalStateException("cannot write manifest " + file, ex);
         }
+    }
+    private static RenderProfile readProfile(final String text) {
+        final Matcher matcher = PROFILE.matcher(text);
+        if (!matcher.find()) {
+            return RenderProfile.draft();
+        }
+        return RenderProfile.parsed(matcher.group(1));
     }
     private static Map<SegmentId, CachedClip> readClips(final String text) {
         final Map<SegmentId, CachedClip> clips = new HashMap<>();

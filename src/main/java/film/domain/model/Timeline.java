@@ -15,7 +15,11 @@ public final class Timeline {
     public List<SegmentSpec> segments() {
         return segments;
     }
-    public TimelineFingerprint print(final ResolvedEnds ends) {
-        return new TimelineFingerprint(this, ends);
+    public TimelineFingerprint print(
+        final ResolvedEnds ends,
+        final RenderProfile profile,
+        final MediaContract contract
+    ) {
+        return new TimelineFingerprint(this, ends, profile, contract);
     }
 }

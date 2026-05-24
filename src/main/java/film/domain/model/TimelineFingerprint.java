@@ -10,21 +10,23 @@ import java.util.HexFormat;
  */
 public final class TimelineFingerprint {
     private final String digest;
-    public TimelineFingerprint(final Timeline timeline, final ResolvedEnds ends) {
+    public TimelineFingerprint(
+        final Timeline timeline,
+        final ResolvedEnds ends,
+        final RenderProfile profile,
+        final MediaContract contract
+    ) {
         final StringBuilder raw = new StringBuilder();
         for (final SegmentSpec spec : timeline.segments()) {
             raw.append(spec.id().label());
             raw.append('=');
-            raw.append(spec.fingerprint(ends.end(spec)).digest());
+            raw.append(spec.fingerprint(ends.end(spec), profile, contract).digest());
             raw.append(';');
         }
         this.digest = sha256(raw.toString());
     }
     public TimelineFingerprint(final String digest) {
         this.digest = digest;
-    }
-    public boolean matches(final TimelineFingerprint that) {
-        return digest.equals(that.digest);
     }
     public String digest() {
         return digest;

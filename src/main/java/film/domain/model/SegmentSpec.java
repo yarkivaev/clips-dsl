@@ -3,7 +3,7 @@ package film.domain.model;
 /**
  * One clip definition: source file, bounds, and optional pace.
  *
- * <p>Usage: {@code new SegmentSpec(id, source, new Cut(from, end, Pace.one()))}
+ * <p>Usage: {@code new SegmentSpec(id, source, new Cut(from, end, Pace.one(), Edits.none()))}
  */
 public final class SegmentSpec {
     private final SegmentId id;
@@ -29,7 +29,14 @@ public final class SegmentSpec {
     public Pace pace() {
         return cut.pace();
     }
-    public Fingerprint fingerprint(final Second resolvedEnd) {
-        return new Fingerprint(this, resolvedEnd);
+    public Edits edits() {
+        return cut.edits();
+    }
+    public Fingerprint fingerprint(
+        final Second resolvedEnd,
+        final RenderProfile profile,
+        final MediaContract contract
+    ) {
+        return new Fingerprint(this, resolvedEnd, profile, contract);
     }
 }

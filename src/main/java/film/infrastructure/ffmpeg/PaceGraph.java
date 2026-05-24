@@ -15,6 +15,14 @@ public final class PaceGraph {
         this.rubberband = rubberband;
     }
     public String complex(final Keyframes keyframes, final double span) {
+        return complexOn(keyframes, span, "0:v", "0:a");
+    }
+    public String complexOn(
+        final Keyframes keyframes,
+        final double span,
+        final String video,
+        final String audio
+    ) {
         final Keyframes curve = keyframes.normalized(span);
         final var points = curve.points();
         final int intervals = points.size() - 1;
@@ -22,8 +30,8 @@ public final class PaceGraph {
             throw new IllegalStateException("normalized keyframes need at least two points");
         }
         final StringBuilder graph = new StringBuilder();
-        int video = 0;
-        int audio = 0;
+        int videoOut = 0;
+        int audioOut = 0;
         for (int i = 0; i < intervals; i++) {
             final Keyframe start = points.get(i);
             final Keyframe end = points.get(i + 1);
@@ -32,27 +40,27 @@ public final class PaceGraph {
             final double d = t1 - t0;
             final double v0 = start.factor();
             final double v1 = end.factor();
-            graph.append(videoSegment(0, t0, t1, d, v0, v1, video));
+            graph.append(videoSegment(video, t0, t1, d, v0, v1, videoOut));
             graph.append(';');
             if (rubberband) {
-                graph.append(audioRubberband(0, t0, t1, v0, v1, audio));
+                graph.append(audioRubberband(audio, t0, t1, v0, v1, audioOut));
             } else {
-                graph.append(audioStepped(0, t0, t1, d, v0, v1, audio));
+                graph.append(audioStepped(audio, t0, t1, d, v0, v1, audioOut));
             }
             if (i < intervals - 1) {
                 graph.append(';');
             }
-            video++;
-            audio += rubberband ? 1 : STEPS;
+            videoOut++;
+            audioOut += rubberband ? 1 : STEPS;
         }
         graph.append(';');
-        appendVideoConcat(graph, video);
+        appendVideoConcat(graph, videoOut);
         graph.append(';');
-        appendAudioConcat(graph, audio);
+        appendAudioConcat(graph, audioOut);
         return graph.toString();
     }
     private static String videoSegment(
-        final int input,
+        final String input,
         final double t0,
         final double t1,
         final double d,
@@ -61,7 +69,7 @@ public final class PaceGraph {
         final int label
     ) {
         final String ramp = videoRamp(v0, v1, d);
-        return "[" + input + ":v]trim=start=" + t0 + ":end=" + t1
+        return "[" + input + "]trim=start=" + t0 + ":end=" + t1
             + ",setpts=PTS-STARTPTS,fps=30,format=yuv420p,setpts='" + ramp + "'[v" + label + "]";
     }
     private static String videoRamp(final double v0, final double v1, final double d) {
@@ -72,7 +80,7 @@ public final class PaceGraph {
             + "))*log((" + v0 + "+(" + v1 + "-" + v0 + ")*T/" + d + ")/" + v0 + ")/T)";
     }
     private static String audioRubberband(
-        final int input,
+        final String input,
         final double t0,
         final double t1,
         final double v0,
@@ -80,11 +88,11 @@ public final class PaceGraph {
         final int label
     ) {
         final double tempo = averageTempo(v0, v1);
-        return "[" + input + ":a]atrim=start=" + t0 + ":end=" + t1
+        return "[" + input + "]atrim=start=" + t0 + ":end=" + t1
             + ",asetpts=PTS-STARTPTS,rubberband=tempo=" + tempo + "[a" + label + "]";
     }
     private static String audioStepped(
-        final int input,
+        final String input,
         final double t0,
         final double t1,
         final double d,
@@ -100,7 +108,7 @@ public final class PaceGraph {
             final double mid = (s0 + s1) / 2.0;
             final double tempo = v0 + (v1 - v0) * (mid - t0) / d;
             final int label = base + s;
-            graph.append("[").append(input).append(":a]atrim=start=").append(s0)
+            graph.append("[").append(input).append("]atrim=start=").append(s0)
                 .append(":end=").append(s1).append(",asetpts=PTS-STARTPTS,")
                 .append(tempoChain(tempo)).append("[a").append(label).append("]");
             if (s < STEPS - 1) {

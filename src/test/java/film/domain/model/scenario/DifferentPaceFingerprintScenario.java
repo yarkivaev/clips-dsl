@@ -2,6 +2,7 @@ package film.domain.model.scenario;
 
 import film.domain.model.AtSecond;
 import film.domain.model.Cut;
+import film.domain.model.Edits;
 import film.domain.model.Fingerprint;
 import film.domain.model.Pace;
 import film.domain.model.Second;
@@ -18,16 +19,16 @@ public final class DifferentPaceFingerprintScenario {
         final SegmentSpec normal = new SegmentSpec(
             new SegmentId("clip"),
             new SourceRef(1),
-            new Cut(new Second(0), new AtSecond(new Second(10)), Pace.one())
+            new Cut(new Second(0), new AtSecond(new Second(10)), Pace.one(), Edits.none())
         );
         final SegmentSpec fast = new SegmentSpec(
             new SegmentId("clip"),
             new SourceRef(1),
-            new Cut(new Second(0), new AtSecond(new Second(10)), new Pace(2.0))
+            new Cut(new Second(0), new AtSecond(new Second(10)), new Pace(2.0), Edits.none())
         );
         final Second end = new Second(10);
-        final Fingerprint left = normal.fingerprint(end);
-        final Fingerprint right = fast.fingerprint(end);
+        final Fingerprint left = normal.fingerprint(end, TestBuildSettings.profile(), TestBuildSettings.contract());
+        final Fingerprint right = fast.fingerprint(end, TestBuildSettings.profile(), TestBuildSettings.contract());
         this.matches = left.matches(right);
     }
     public boolean matches() {

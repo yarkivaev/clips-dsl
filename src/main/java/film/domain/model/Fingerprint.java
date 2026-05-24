@@ -8,16 +8,24 @@ import java.util.HexFormat;
 /**
  * Content hash of a segment specification for cache and diff.
  *
- * <p>Usage: {@code spec.fingerprint(resolvedEnd)}
+ * <p>Usage: {@code spec.fingerprint(resolvedEnd, profile, contract)}
  */
 public final class Fingerprint {
     private final String digest;
-    public Fingerprint(final SegmentSpec spec, final Second resolvedEnd) {
+    public Fingerprint(
+        final SegmentSpec spec,
+        final Second resolvedEnd,
+        final RenderProfile profile,
+        final MediaContract contract
+    ) {
         final String raw = spec.source().number()
             + "|" + spec.from().amount()
             + "|" + resolvedEnd.amount()
+            + "|" + spec.edits().label()
             + "|" + spec.pace().label()
-            + "|x264-fps30-inseek";
+            + "|" + profile.label()
+            + "|" + contract.label()
+            + "|x264-inseek";
         this.digest = sha256(raw);
     }
     public Fingerprint(final String digest) {

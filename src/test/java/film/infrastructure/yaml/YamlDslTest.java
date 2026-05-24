@@ -1,6 +1,9 @@
 package film.infrastructure.yaml;
 
 import film.infrastructure.yaml.scenario.YamlDslDurationEndScenario;
+import film.infrastructure.yaml.scenario.YamlDslExcludePlayScenario;
+import film.infrastructure.yaml.scenario.YamlDslOpenExcludeScenario;
+import film.infrastructure.yaml.scenario.YamlDslExcludeRejectsBothEndsScenario;
 import film.infrastructure.yaml.scenario.YamlDslKeyframeAtTimeScenario;
 import film.infrastructure.yaml.scenario.YamlDslKeyframesScenario;
 import film.infrastructure.yaml.scenario.YamlDslRejectsBadKeyframesScenario;
@@ -55,6 +58,30 @@ final class YamlDslTest {
             "keyframe at should parse M:SS time literal as seconds",
             new YamlDslKeyframeAtTimeScenario(workspace).at(),
             is(20.0)
+        );
+    }
+    @Test
+    void excludeMayOmitFromForWindowStart(@TempDir final Path workspace) {
+        assertThat(
+            "exclude without from should parse and keep tail of clip window",
+            new YamlDslOpenExcludeScenario(workspace).play(),
+            is(40.0)
+        );
+    }
+    @Test
+    void excludeDurationCapsTrimmedPlayLength(@TempDir final Path workspace) {
+        assertThat(
+            "exclude with duration should cap play on trimmed timeline",
+            new YamlDslExcludePlayScenario(workspace).play(),
+            is(30.0)
+        );
+    }
+    @Test
+    void excludeCannotSetToAndDurationTogether(@TempDir final Path workspace) {
+        assertThat(
+            "exclude must not accept both to and duration",
+            new YamlDslExcludeRejectsBothEndsScenario(workspace).rejected(),
+            is(true)
         );
     }
 }

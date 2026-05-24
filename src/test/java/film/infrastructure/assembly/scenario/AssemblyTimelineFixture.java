@@ -1,7 +1,10 @@
 package film.infrastructure.assembly.scenario;
 
+import film.domain.model.MediaContract;
+import film.domain.model.RenderProfile;
 import film.domain.model.AtSecond;
 import film.domain.model.Cut;
+import film.domain.model.Edits;
 import film.domain.model.Pace;
 import film.domain.model.ResolvedEnds;
 import film.domain.model.Second;
@@ -21,13 +24,19 @@ import java.util.Map;
 public final class AssemblyTimelineFixture {
     private AssemblyTimelineFixture() {
     }
+    public static RenderProfile profile() {
+        return RenderProfile.draft();
+    }
+    public static MediaContract contract() {
+        return MediaContract.defaults();
+    }
     public static Timeline timeline(final int count) {
         final List<SegmentSpec> segments = new ArrayList<>();
         for (int index = 0; index < count; index++) {
             segments.add(new SegmentSpec(
                 new SegmentId("seg-" + index),
                 new SourceRef(index + 1),
-                new Cut(new Second(0), new AtSecond(new Second(10)), Pace.one())
+                new Cut(new Second(0), new AtSecond(new Second(10)), Pace.one(), Edits.none())
             ));
         }
         return new Timeline(segments);

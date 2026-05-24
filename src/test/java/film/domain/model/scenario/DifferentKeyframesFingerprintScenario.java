@@ -2,6 +2,7 @@ package film.domain.model.scenario;
 
 import film.domain.model.AtSecond;
 import film.domain.model.Cut;
+import film.domain.model.Edits;
 import film.domain.model.Fingerprint;
 import film.domain.model.Keyframe;
 import film.domain.model.Keyframes;
@@ -30,16 +31,16 @@ public final class DifferentKeyframesFingerprintScenario {
         final SegmentSpec leftSpec = new SegmentSpec(
             new SegmentId("clip"),
             new SourceRef(1),
-            new Cut(new Second(0), new AtSecond(new Second(10)), slow)
+            new Cut(new Second(0), new AtSecond(new Second(10)), slow, Edits.none())
         );
         final SegmentSpec rightSpec = new SegmentSpec(
             new SegmentId("clip"),
             new SourceRef(1),
-            new Cut(new Second(0), new AtSecond(new Second(10)), fast)
+            new Cut(new Second(0), new AtSecond(new Second(10)), fast, Edits.none())
         );
         final Second end = new Second(10);
-        final Fingerprint left = leftSpec.fingerprint(end);
-        final Fingerprint right = rightSpec.fingerprint(end);
+        final Fingerprint left = leftSpec.fingerprint(end, TestBuildSettings.profile(), TestBuildSettings.contract());
+        final Fingerprint right = rightSpec.fingerprint(end, TestBuildSettings.profile(), TestBuildSettings.contract());
         this.matches = left.matches(right);
     }
     public boolean matches() {

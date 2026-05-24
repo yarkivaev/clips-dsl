@@ -1,9 +1,11 @@
 package film.application;
 
 import film.domain.model.BuildResult;
+import film.domain.model.BuildSettings;
 import film.domain.model.BuildTasks;
 import film.domain.model.Manifest;
 import film.domain.model.OpenedDsl;
+import film.domain.model.RenderProfile;
 import film.domain.model.ResolvedEnds;
 import film.domain.model.SegmentId;
 import film.domain.model.SegmentSpec;
@@ -22,7 +24,7 @@ import java.util.Map;
 /**
  * Use case: build film from DSL with incremental clip cache.
  *
- * <p>Usage: {@code new FilmBuild(dsl, duration, clip, concat, assembly, manifest, workspace, dslPath).run()}
+ * <p>Usage: {@code new FilmBuild(dsl, duration, clip, concat, assembly, manifest, settings, workspace, dslPath).run()}
  */
 public final class FilmBuild {
     private final Dsl dsl;
@@ -31,6 +33,7 @@ public final class FilmBuild {
     private final Concat concat;
     private final Assembly assembly;
     private final ManifestFile manifestFile;
+    private final BuildSettings settings;
     private final Path workspace;
     private final Path dslPath;
     public FilmBuild(
@@ -40,6 +43,7 @@ public final class FilmBuild {
         final Concat concat,
         final Assembly assembly,
         final ManifestFile manifestFile,
+        final BuildSettings settings,
         final Path workspace,
         final Path dslPath
     ) {
@@ -49,6 +53,7 @@ public final class FilmBuild {
         this.concat = concat;
         this.assembly = assembly;
         this.manifestFile = manifestFile;
+        this.settings = settings;
         this.workspace = workspace;
         this.dslPath = dslPath;
     }
@@ -58,8 +63,14 @@ public final class FilmBuild {
         validateSources(desired);
         final Path output = workspace.resolve(opened.output().toString()).normalize();
         final ResolvedEnds ends = ResolvedEnds.of(desired, this::resolveEnd);
-        final Manifest prior = manifestFile.loaded();
-        final var segmentTasks = prior.diff(desired, ends).tasks();
+        final RenderProfile profile = settings.profile();
+        final Manifest prior = manifestFile.loaded(profile);
+        final var segmentTasks = prior.diff(
+            desired,
+            ends,
+            profile,
+            settings.contract()
+        ).tasks();
         final Path clipsDir = workspace.resolve("build/clips");
         final Path partsDir = workspace.resolve("build/parts");
         try {
@@ -69,23 +80,39 @@ public final class FilmBuild {
         } catch (final java.io.IOException ex) {
             throw new IllegalStateException("cannot create build dirs under " + workspace, ex);
         }
-        final Map<SegmentId, Path> clips = preseed(prior, desired, ends, clipsDir);
+        final Map<SegmentId, Path> clips = preseed(prior, desired, ends, clipsDir, profile);
         final var assemblyPlan = assembly.planned(prior, desired, ends, clips, workspace, output);
         final BuildTasks tasks = BuildTasks.withAssembly(desired, ends, segmentTasks.steps(), assemblyPlan);
         final BuildResult result = tasks.execute(
-            clip, concat, assembly, workspace, clipsDir, partsDir, output, prior
+            clip,
+            concat,
+            assembly,
+            workspace,
+            clipsDir,
+            partsDir,
+            output,
+            prior,
+            settings
         );
-        manifestFile.saved(prior.saved(desired, ends, result.artifacts(), result.assembly()));
+        manifestFile.saved(prior.saved(
+            desired,
+            ends,
+            profile,
+            settings.contract(),
+            result.artifacts(),
+            result.assembly()
+        ));
     }
     private Map<SegmentId, Path> preseed(
         final Manifest prior,
         final film.domain.model.Timeline desired,
         final ResolvedEnds ends,
-        final Path clipsDir
+        final Path clipsDir,
+        final RenderProfile profile
     ) {
         final Map<SegmentId, Path> clips = new HashMap<>();
         for (final SegmentSpec spec : desired.segments()) {
-            if (prior.cached(spec.id(), spec.fingerprint(ends.end(spec)))) {
+            if (prior.cached(spec.id(), spec.fingerprint(ends.end(spec), profile, settings.contract()))) {
                 clips.put(spec.id(), prior.path(spec.id()));
             } else {
                 clips.put(spec.id(), clipsDir.resolve(spec.id().label() + ".mp4"));

@@ -8,6 +8,9 @@ import java.nio.file.Path;
  * <p>Usage: {@code new ConcatLabel().part("0", 8, path)}
  */
 public final class ConcatLabel {
+    public String node(final String id, final int inputs, final Path output) {
+        return "concat node " + id + " → " + output.getFileName() + " (" + inputs + " inputs)";
+    }
     public String part(final String id, final int clips, final Path output) {
         return "concat part " + id + " → " + output.getFileName() + " (" + clips + " clips)";
     }

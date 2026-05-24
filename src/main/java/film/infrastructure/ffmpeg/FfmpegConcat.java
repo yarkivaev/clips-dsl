@@ -1,5 +1,7 @@
 package film.infrastructure.ffmpeg;
 
+import film.domain.model.MediaContract;
+import film.domain.model.RenderProfile;
 import film.domain.model.ResolvedEnds;
 import film.domain.model.SegmentId;
 import film.domain.model.SegmentSpec;
@@ -13,14 +15,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Joins clips with the concat filter (one ffmpeg input per clip).
+ * Joins clips with stream copy in draft or filter concat in release.
  */
 public final class FfmpegConcat implements Concat {
     private final FfmpegProcess ffmpeg;
     private final ConcatLabel labels;
-    public FfmpegConcat(final Path logDir) {
+    private final RenderProfile profile;
+    private final MediaContract contract;
+    private final StreamMatch match;
+    public FfmpegConcat(
+        final Path logDir,
+        final RenderProfile profile,
+        final MediaContract contract
+    ) {
         this.ffmpeg = new FfmpegProcess(logDir);
         this.labels = new ConcatLabel();
+        this.profile = profile;
+        this.contract = contract;
+        this.match = new StreamMatch(new FfprobeStream(logDir));
     }
     @Override
     public void join(
@@ -45,64 +57,47 @@ public final class FfmpegConcat implements Concat {
         }
         try {
             Files.createDirectories(output.getParent());
-            final List<String> cmd = new ArrayList<>();
-            cmd.add("ffmpeg");
-            cmd.add("-y");
-            cmd.add("-nostats");
-            cmd.add("-loglevel");
-            cmd.add("info");
-            for (final Path input : inputs) {
-                cmd.add("-i");
-                cmd.add(input.toAbsolutePath().toString());
+            if (profile.copyConcat()) {
+                copyJoined(inputs, output, logKey, label);
+                return;
             }
-            cmd.add("-filter_complex");
-            cmd.add(filter(inputs.size()));
-            cmd.add("-map");
-            cmd.add("[outv]");
-            cmd.add("-map");
-            cmd.add("[outa]");
-            cmd.add("-c:v");
-            cmd.add("libx264");
-            cmd.add("-preset");
-            cmd.add("fast");
-            cmd.add("-crf");
-            cmd.add("22");
-            cmd.add("-c:a");
-            cmd.add("aac");
-            cmd.add("-b:a");
-            cmd.add("192k");
-            cmd.add("-movflags");
-            cmd.add("+faststart");
-            cmd.add(output.toString());
-            final ProcessBuilder builder = new ProcessBuilder(cmd);
-            ffmpeg.run(builder, logKey, label);
+            reencodeJoined(inputs, output, logKey, label);
         } catch (final java.io.IOException ex) {
             throw new IllegalStateException("ffmpeg concat cannot prepare output " + output, ex);
         }
     }
-    private String filter(final int count) {
-        final StringBuilder graph = new StringBuilder();
-        for (int index = 0; index < count; index++) {
-            graph.append("[");
-            graph.append(index);
-            graph.append(":v]fps=30,format=yuv420p,setpts=PTS-STARTPTS[v");
-            graph.append(index);
-            graph.append("];[");
-            graph.append(index);
-            graph.append(":a]aresample=48000,asetpts=PTS-STARTPTS[a");
-            graph.append(index);
-            graph.append("];");
+    private void copyJoined(
+        final List<Path> inputs,
+        final Path output,
+        final String logKey,
+        final String label
+    ) throws java.io.IOException {
+        match.matched(inputs, contract);
+        final Path listFile = output.getParent().resolve(logKey + "-list.txt");
+        writeList(inputs, listFile);
+        final ProcessBuilder builder = new ProcessBuilder(
+            ConcatCommand.copyCommand(listFile, output)
+        );
+        ffmpeg.run(builder, logKey, label);
+    }
+    private void reencodeJoined(
+        final List<Path> inputs,
+        final Path output,
+        final String logKey,
+        final String label
+    ) {
+        final ProcessBuilder builder = new ProcessBuilder(
+            ConcatCommand.reencodeCommand(inputs, contract, profile, output)
+        );
+        ffmpeg.run(builder, logKey, label);
+    }
+    private static void writeList(final List<Path> inputs, final Path listFile) throws java.io.IOException {
+        final StringBuilder text = new StringBuilder();
+        for (final Path input : inputs) {
+            text.append("file '");
+            text.append(input.toAbsolutePath().toString().replace("'", "'\\''"));
+            text.append("'\n");
         }
-        for (int index = 0; index < count; index++) {
-            graph.append("[v");
-            graph.append(index);
-            graph.append("][a");
-            graph.append(index);
-            graph.append("]");
-        }
-        graph.append("concat=n=");
-        graph.append(count);
-        graph.append(":v=1:a=1[outv][outa]");
-        return graph.toString();
+        Files.writeString(listFile, text.toString());
     }
 }

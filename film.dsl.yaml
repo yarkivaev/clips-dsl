@@ -42,6 +42,32 @@ clips:
     speed: 8
   - id: Ищем первое место для стоянки
     source: 18
-    from: 0:32
-    to: 1:24
-
+    from: 0:28
+    to: 1:07
+  - id: Гриб
+    source: 18
+    from: 1:54 
+    to: 2:20
+  - id: Я нашёл тропу!
+    source: 18
+    from: 8:45
+    to: 9:00
+  - id: Еду по тропе, по камням
+    source: 19
+    from: 0:45
+    exclude:
+      - from: 0:30
+        to: 1:20
+      - from: 1:35
+        to: 2:28
+      - from: 3:15
+    speed: 3
+  - id: Собираю палатку
+    source: 21
+    speed: 20
+  - id: Собираю палатку 2
+    source: 22
+    to: 0:41
+    speed: 2
+  - id: Встретили туристов
+    source: 23
