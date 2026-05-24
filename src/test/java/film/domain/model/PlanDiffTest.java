@@ -21,26 +21,10 @@ final class PlanDiffTest {
         );
     }
     @Test
-    void unchangedFingerprintDoesNotScheduleJoin() {
-        assertThat(
-            "timeline fingerprint unchanged should not concat",
-            new UnchangedFingerprintScenario().joinScheduled(),
-            is(false)
-        );
-    }
-    @Test
     void changedSegmentBoundSchedulesRender() {
         assertThat(
             "changed segment bound should schedule render",
             new ChangedSegmentBoundScenario().renderScheduled(),
-            is(true)
-        );
-    }
-    @Test
-    void changedSegmentBoundSchedulesJoin() {
-        assertThat(
-            "changed segment bound should schedule concat",
-            new ChangedSegmentBoundScenario().joinScheduled(),
             is(true)
         );
     }

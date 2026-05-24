@@ -26,10 +26,6 @@ public final class PlanDiff {
                 steps.add(new RenderedTask(new Rendered(spec, end)));
             }
         }
-        final TimelineFingerprint wantedPrint = desired.print(ends);
-        if (!prior.timeline().matches(wantedPrint)) {
-            steps.add(new JoinedTask(Joined.INSTANCE));
-        }
         return new BuildTasks(desired, ends, steps);
     }
 }

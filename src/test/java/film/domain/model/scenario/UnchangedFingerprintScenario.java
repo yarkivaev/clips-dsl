@@ -14,6 +14,7 @@ import film.domain.model.SegmentId;
 import film.domain.model.SegmentSpec;
 import film.domain.model.SourceRef;
 import film.domain.model.Timeline;
+import film.domain.model.VacantAssemblySnapshot;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,8 @@ import java.util.Map;
  */
 public final class UnchangedFingerprintScenario {
     private final BuildTasks tasks;
+    private final Timeline timeline;
+    private final ResolvedEnds ends;
     public UnchangedFingerprintScenario() {
         final SegmentSpec alpha = new SegmentSpec(
             new SegmentId("alpha"),
@@ -34,22 +37,30 @@ public final class UnchangedFingerprintScenario {
             new SourceRef(2),
             new Cut(new Second(5), new AtSecond(new Second(15)), Pace.one())
         );
+        final Timeline timeline = new Timeline(List.of(alpha, beta));
         final ResolvedEnds ends = new ResolvedEnds(
             Map.of(
                 alpha.id(), new Second(10),
                 beta.id(), new Second(15)
             )
         );
-        final Timeline timeline = new Timeline(List.of(alpha, beta));
+        this.timeline = timeline;
+        this.ends = ends;
         final Manifest prior = manifestFor(timeline, ends);
         final PlanDiff diff = prior.diff(timeline, ends);
         this.tasks = diff.tasks();
     }
+    public Timeline timeline() {
+        return timeline;
+    }
+    public ResolvedEnds ends() {
+        return ends;
+    }
+    public BuildTasks tasks() {
+        return tasks;
+    }
     public List<Class<?>> taskTypes() {
         return tasks.types();
-    }
-    public boolean joinScheduled() {
-        return tasks.joinScheduled();
     }
     private static Manifest manifestFor(final Timeline timeline, final ResolvedEnds ends) {
         final SegmentSpec alpha = timeline.segments().get(0);
@@ -57,7 +68,7 @@ public final class UnchangedFingerprintScenario {
         final Fingerprint alphaPrint = alpha.fingerprint(ends.end(alpha));
         final Fingerprint betaPrint = beta.fingerprint(ends.end(beta));
         return new Manifest(
-            timeline.print(ends),
+            new VacantAssemblySnapshot(),
             Map.of(
                 alpha.id(), new CachedClip(alpha.id(), alphaPrint, Path.of("build/clips/alpha.mp4")),
                 beta.id(), new CachedClip(beta.id(), betaPrint, Path.of("build/clips/beta.mp4"))

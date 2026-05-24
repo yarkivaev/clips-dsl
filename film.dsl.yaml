@@ -20,3 +20,28 @@ clips:
         speed: 1
       - at: 0:40
         speed: 3
+  - id: Очень сильный дождь, нас обгоняют фуры
+    source: 8
+    from: 1:00
+    duration: 2:00
+    speed: 5
+  - id: Едем после дождя
+    source: 9
+    from: 0:15
+    speed: 5
+  - id: Даниил глядит в камеру
+    source: 11
+    from: 0:01
+  - id: Красивая извилистая дорога
+    source: 15
+    speed: 6
+  - id: Красивая извилистая дорога 2
+    source: 16
+    from: 0:40
+    to: 1:27
+    speed: 8
+  - id: Ищем первое место для стоянки
+    source: 18
+    from: 0:32
+    to: 1:24
+

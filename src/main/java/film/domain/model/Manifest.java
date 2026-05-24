@@ -9,14 +9,14 @@ import java.util.Map;
  * Snapshot of the last successful build for incremental diff.
  */
 public final class Manifest {
-    private final TimelineFingerprint timeline;
+    private final AssemblySnapshot assembly;
     private final Map<SegmentId, CachedClip> clips;
-    public Manifest(final TimelineFingerprint timeline, final Map<SegmentId, CachedClip> clips) {
-        this.timeline = timeline;
+    public Manifest(final AssemblySnapshot assembly, final Map<SegmentId, CachedClip> clips) {
+        this.assembly = assembly;
         this.clips = Map.copyOf(clips);
     }
     public static Manifest empty() {
-        return new Manifest(new TimelineFingerprint(""), Collections.emptyMap());
+        return new Manifest(new VacantAssemblySnapshot(), Collections.emptyMap());
     }
     public PlanDiff diff(final Timeline desired, final ResolvedEnds ends) {
         return new PlanDiff(this, desired, ends);
@@ -33,13 +33,18 @@ public final class Manifest {
         }
         return clips.get(id).path();
     }
-    public TimelineFingerprint timeline() {
-        return timeline;
+    public AssemblySnapshot assembly() {
+        return assembly;
     }
     public Map<SegmentId, CachedClip> clips() {
         return clips;
     }
-    public Manifest saved(final Timeline desired, final ResolvedEnds ends, final Map<SegmentId, Path> artifacts) {
+    public Manifest saved(
+        final Timeline desired,
+        final ResolvedEnds ends,
+        final Map<SegmentId, Path> artifacts,
+        final AssemblySnapshot assemblySnapshot
+    ) {
         final Map<SegmentId, CachedClip> next = new HashMap<>();
         for (final SegmentSpec spec : desired.segments()) {
             final Path path = artifacts.get(spec.id());
@@ -48,6 +53,6 @@ public final class Manifest {
             }
             next.put(spec.id(), new CachedClip(spec.id(), spec.fingerprint(ends.end(spec)), path));
         }
-        return new Manifest(desired.print(ends), next);
+        return new Manifest(assemblySnapshot, next);
     }
 }

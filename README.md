@@ -25,7 +25,9 @@ Logs (written live during build): `build/logs/`
 
 - `film.log` — high-level progress and “still running” heartbeats every 30s
 - `cut-<id>.log` — ffmpeg output while rendering each clip
-- `concat.log` — final join
+- `concat-part-<n>.log` — joining clips into chunk part files
+- `concat-root.log` — joining parts into the final film
+- `concat-film.log` — direct clip-to-output join when used
 - `probe-<n>.log` — ffprobe when resolving end-of-file
 
 While a step runs:
@@ -63,9 +65,16 @@ make film-validate
 
 ## Incremental rebuild
 
-Changing one clip’s bounds or speed curve re-renders only that `id` and re-concats. Unchanged fingerprints are skipped. Reordering clips re-concats only.
+Two cache levels:
 
-Clips and the final join are encoded as **h264/aac** (not stream copy) so VLC does not freeze when timestamps differ between DJI segments.
+- **Clips** — `build/clips/<id>.mp4` (per-segment cut). Changing bounds or speed re-renders only that `id`.
+- **Parts** — `build/parts/part-NNN.mp4` (chunks of 8 clips). A change invalidates only the affected part, then parts are joined into `build/output.mp4`.
+
+Unchanged fingerprints are skipped at both levels. Reordering clips invalidates assembly but may skip re-rendering individual clips.
+
+Assembly topology is pluggable (`Assembly` port); v1 uses flat chunks. Future versions may use a tree for very long films.
+
+Clips and joins are encoded as **h264/aac** (not stream copy) so VLC does not freeze when timestamps differ between DJI segments.
 
 ```bash
 make film-clean

@@ -14,6 +14,7 @@ import film.domain.model.SegmentId;
 import film.domain.model.SegmentSpec;
 import film.domain.model.SourceRef;
 import film.domain.model.Timeline;
+import film.domain.model.VacantAssemblySnapshot;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -60,14 +61,11 @@ public final class ChangedSegmentBoundScenario {
         }
         return false;
     }
-    public boolean joinScheduled() {
-        return tasks.joinScheduled();
-    }
     private static Manifest manifestFor(final Timeline timeline, final ResolvedEnds ends) {
         final SegmentSpec alpha = timeline.segments().get(0);
         final SegmentSpec beta = timeline.segments().get(1);
         return new Manifest(
-            timeline.print(ends),
+            new VacantAssemblySnapshot(),
             Map.of(
                 alpha.id(), new CachedClip(
                     alpha.id(),

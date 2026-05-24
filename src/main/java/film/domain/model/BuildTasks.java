@@ -1,5 +1,7 @@
 package film.domain.model;
 
+import film.domain.port.Assembly;
+import film.domain.port.AssemblyPlan;
 import film.domain.port.Clip;
 import film.domain.port.Concat;
 
@@ -10,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Executable plan: render changed clips then concat when needed.
+ * Executable plan: render changed clips then assemble when needed.
  */
 public final class BuildTasks {
     private final Timeline timeline;
@@ -20,6 +22,18 @@ public final class BuildTasks {
         this.timeline = timeline;
         this.ends = ends;
         this.steps = List.copyOf(steps);
+    }
+    public static BuildTasks withAssembly(
+        final Timeline timeline,
+        final ResolvedEnds ends,
+        final List<Task> segmentSteps,
+        final AssemblyPlan assemblyPlan
+    ) {
+        final List<Task> steps = new ArrayList<>(segmentSteps);
+        if (!assemblyPlan.empty()) {
+            steps.add(new AssembledTask(Assembled.INSTANCE, assemblyPlan));
+        }
+        return new BuildTasks(timeline, ends, steps);
     }
     public List<Task> steps() {
         return steps;
@@ -31,7 +45,7 @@ public final class BuildTasks {
         }
         return names;
     }
-    public boolean joinScheduled() {
+    public boolean assembleScheduled() {
         for (final Task step : steps) {
             if (step.concat()) {
                 return true;
@@ -39,11 +53,13 @@ public final class BuildTasks {
         }
         return false;
     }
-    public Map<SegmentId, Path> execute(
+    public BuildResult execute(
         final Clip clip,
         final Concat concat,
+        final Assembly assembly,
         final Path workspace,
         final Path clipsDir,
+        final Path partsDir,
         final Path output,
         final Manifest prior
     ) {
@@ -54,7 +70,17 @@ public final class BuildTasks {
             }
         }
         final Execution execution = new Execution(
-            clip, concat, workspace, clipsDir, output, timeline, ends, artifacts
+            clip,
+            concat,
+            assembly,
+            workspace,
+            clipsDir,
+            partsDir,
+            output,
+            timeline,
+            ends,
+            artifacts,
+            prior.assembly()
         );
         boolean anyWork = false;
         for (final Task step : steps) {
@@ -66,6 +92,6 @@ public final class BuildTasks {
         if (!anyWork) {
             System.out.println("no-op build");
         }
-        return artifacts;
+        return new BuildResult(artifacts, execution.assemblySnapshot());
     }
 }

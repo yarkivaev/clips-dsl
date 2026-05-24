@@ -4,8 +4,8 @@ import film.domain.model.CachedClip;
 import film.domain.model.Fingerprint;
 import film.domain.model.Manifest;
 import film.domain.model.SegmentId;
-import film.domain.model.TimelineFingerprint;
 import film.domain.port.ManifestFile;
+import film.infrastructure.assembly.AssemblyCodec;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,8 +22,10 @@ public final class JsonManifest implements ManifestFile {
         "\\s*\"([^\"]+)\"\\s*:\\s*\\{\\s*\"digest\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"path\"\\s*:\\s*\"([^\"]+)\"\\s*\\}"
     );
     private final Path file;
+    private final AssemblyCodec codec;
     public JsonManifest(final Path workspace) {
         this.file = workspace.resolve("build").resolve("manifest.json");
+        this.codec = new AssemblyCodec();
     }
     @Override
     public Manifest loaded() {
@@ -32,9 +34,8 @@ public final class JsonManifest implements ManifestFile {
         }
         try {
             final String text = Files.readString(file);
-            final String timeline = readTimeline(text);
             final Map<SegmentId, CachedClip> clips = readClips(text);
-            return new Manifest(new TimelineFingerprint(timeline), clips);
+            return new Manifest(codec.loaded(text), clips);
         } catch (final java.io.IOException ex) {
             throw new IllegalStateException("cannot read manifest " + file, ex);
         }
@@ -45,9 +46,6 @@ public final class JsonManifest implements ManifestFile {
             Files.createDirectories(file.getParent());
             final StringBuilder json = new StringBuilder();
             json.append("{\n");
-            json.append("  \"timeline\": \"");
-            json.append(manifest.timeline().digest());
-            json.append("\",\n");
             json.append("  \"clips\": {\n");
             boolean first = true;
             for (final Map.Entry<SegmentId, CachedClip> entry : manifest.clips().entrySet()) {
@@ -64,19 +62,17 @@ public final class JsonManifest implements ManifestFile {
                 json.append(clip.path().toString().replace("\\", "\\\\").replace("\"", "\\\""));
                 json.append("\"}");
             }
-            json.append("\n  }\n}\n");
+            json.append("\n  }");
+            final String assembly = codec.saved(manifest.assembly());
+            if (!assembly.isEmpty()) {
+                json.append(",\n");
+                json.append(assembly);
+            }
+            json.append("\n}\n");
             Files.writeString(file, json.toString());
         } catch (final java.io.IOException ex) {
             throw new IllegalStateException("cannot write manifest " + file, ex);
         }
-    }
-    private static String readTimeline(final String text) {
-        final Pattern pattern = Pattern.compile("\"timeline\"\\s*:\\s*\"([^\"]+)\"");
-        final Matcher matcher = pattern.matcher(text);
-        if (!matcher.find()) {
-            throw new IllegalStateException("manifest missing timeline digest");
-        }
-        return matcher.group(1);
     }
     private static Map<SegmentId, CachedClip> readClips(final String text) {
         final Map<SegmentId, CachedClip> clips = new HashMap<>();

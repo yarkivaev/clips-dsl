@@ -12,4 +12,5 @@ import java.util.Map;
  */
 public interface Concat {
     void join(Timeline timeline, ResolvedEnds ends, Map<SegmentId, Path> clips, Path output);
+    void joined(java.util.List<Path> inputs, Path output, String logKey, String label);
 }

@@ -2,6 +2,7 @@ package film;
 
 import film.application.FilmBuild;
 import film.domain.port.Dsl;
+import film.infrastructure.assembly.ChunkAssembly;
 import film.infrastructure.ffmpeg.FfmpegCapabilities;
 import film.infrastructure.ffmpeg.FfmpegClip;
 import film.infrastructure.ffmpeg.FfmpegConcat;
@@ -42,6 +43,7 @@ public final class Application {
             new FfprobeDuration(logs),
             new FfmpegClip(logs, capabilities),
             new FfmpegConcat(logs),
+            new ChunkAssembly(4),
             new JsonManifest(workspace),
             workspace,
             dslPath
