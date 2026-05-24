@@ -5,6 +5,8 @@ import film.domain.model.AtSecond;
 import film.domain.model.AtSpan;
 import film.domain.model.Cut;
 import film.domain.model.CutEnd;
+import film.domain.model.Keyframe;
+import film.domain.model.Keyframes;
 import film.domain.model.Pace;
 import film.domain.model.OpenedDsl;
 import film.domain.model.Second;
@@ -55,17 +57,94 @@ public final class YamlDsl implements Dsl {
         final int source = asInt(map, "source");
         final double from = map.containsKey("from") ? asDouble(map, "from") : 0;
         final CutEnd end = end(map);
-        final Pace pace;
-        if (map.containsKey("speed")) {
-            pace = new Pace(asDouble(map, "speed"));
-        } else {
-            pace = Pace.one();
-        }
+        final Pace pace = pace(map);
         return new SegmentSpec(
             new SegmentId(id),
             new SourceRef(source),
             new Cut(new Second(from), end, pace)
         );
+    }
+    private static Pace pace(final Map<String, Object> map) {
+        if (!map.containsKey("speed")) {
+            return Pace.one();
+        }
+        final Object raw = map.get("speed");
+        if (raw instanceof Number number) {
+            return new Pace(number.doubleValue());
+        }
+        if (raw instanceof List<?> list) {
+            return new Pace(keyframesFrom(list, map));
+        }
+        throw new IllegalStateException(
+            "DSL key speed must be a number or keyframe list for clip " + map.get("id")
+        );
+    }
+    @SuppressWarnings("unchecked")
+    private static Keyframes keyframesFrom(final List<?> list, final Map<String, Object> clip) {
+        final List<Keyframe> points = new ArrayList<>();
+        for (final Object item : list) {
+            if (!(item instanceof Map<?, ?> raw)) {
+                throw new IllegalStateException(
+                    "speed keyframe entry must be a mapping for clip " + clip.get("id")
+                );
+            }
+            final Map<String, Object> point = (Map<String, Object>) raw;
+            final double at = seconds(point.get("at"), "at", clip.get("id"));
+            final double factor = number(point.get("speed"), "speed", clip.get("id"));
+            points.add(new Keyframe(new Second(at), factor));
+        }
+        return Keyframes.of(points);
+    }
+    private static double number(final Object value, final String key, final Object clipId) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        throw new IllegalStateException(
+            "DSL key " + key + " must be a number for clip " + clipId
+        );
+    }
+    private static double seconds(final Object value, final String key, final Object clipId) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value instanceof String text) {
+            return parseTime(text.trim(), key, clipId);
+        }
+        throw new IllegalStateException(
+            "DSL key " + key + " must be a number or time for clip " + clipId
+        );
+    }
+    private static double parseTime(final String text, final String key, final Object clipId) {
+        if (!text.contains(":")) {
+            try {
+                return Double.parseDouble(text);
+            } catch (final NumberFormatException ex) {
+                throw new IllegalStateException(
+                    "DSL key " + key + " is not a valid time for clip " + clipId + " value " + text
+                );
+            }
+        }
+        final String[] parts = text.split(":");
+        if (parts.length == 2) {
+            return parseTimePart(parts[0], key, clipId) * 60 + parseTimePart(parts[1], key, clipId);
+        }
+        if (parts.length == 3) {
+            return parseTimePart(parts[0], key, clipId) * 3600
+                + parseTimePart(parts[1], key, clipId) * 60
+                + parseTimePart(parts[2], key, clipId);
+        }
+        throw new IllegalStateException(
+            "DSL key " + key + " time must be M:SS or H:MM:SS for clip " + clipId + " value " + text
+        );
+    }
+    private static double parseTimePart(final String part, final String key, final Object clipId) {
+        try {
+            return Double.parseDouble(part);
+        } catch (final NumberFormatException ex) {
+            throw new IllegalStateException(
+                "DSL key " + key + " time part is not numeric for clip " + clipId + " part " + part
+            );
+        }
     }
     private static CutEnd end(final Map<String, Object> map) {
         final boolean hasTo = map.containsKey("to");
@@ -120,10 +199,6 @@ public final class YamlDsl implements Dsl {
         throw new IllegalStateException("DSL key " + key + " must be a number");
     }
     private static double asDouble(final Map<String, Object> map, final String key) {
-        final Object value = map.get(key);
-        if (value instanceof Number number) {
-            return number.doubleValue();
-        }
-        throw new IllegalStateException("DSL key " + key + " must be a number");
+        return seconds(map.get(key), key, map.get("id"));
     }
 }

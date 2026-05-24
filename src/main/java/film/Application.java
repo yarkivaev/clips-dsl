@@ -2,6 +2,7 @@ package film;
 
 import film.application.FilmBuild;
 import film.domain.port.Dsl;
+import film.infrastructure.ffmpeg.FfmpegCapabilities;
 import film.infrastructure.ffmpeg.FfmpegClip;
 import film.infrastructure.ffmpeg.FfmpegConcat;
 import film.infrastructure.ffmpeg.FfprobeDuration;
@@ -35,10 +36,11 @@ public final class Application {
             return;
         }
         final Path logs = workspace.resolve("build/logs");
+        final FfmpegCapabilities capabilities = new FfmpegCapabilities();
         final FilmBuild build = new FilmBuild(
             dsl,
             new FfprobeDuration(logs),
-            new FfmpegClip(logs),
+            new FfmpegClip(logs, capabilities),
             new FfmpegConcat(logs),
             new JsonManifest(workspace),
             workspace,
