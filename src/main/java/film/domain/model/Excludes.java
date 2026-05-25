@@ -9,20 +9,20 @@ import java.util.List;
  * <p>Usage: {@code Excludes.of(list)} or {@code Excludes.none()}
  */
 public final class Excludes {
-    private final List<ExcludeSpan> gaps;
-    public Excludes(final List<ExcludeSpan> gaps) {
+    private final List<EditSpan> gaps;
+    public Excludes(final List<EditSpan> gaps) {
         this.gaps = List.copyOf(gaps);
     }
     public static Excludes none() {
         return new Excludes(List.of());
     }
-    public static Excludes of(final List<ExcludeSpan> gaps) {
+    public static Excludes of(final List<EditSpan> gaps) {
         return new Excludes(gaps);
     }
     public boolean present() {
         return !gaps.isEmpty();
     }
-    public List<ExcludeSpan> gaps() {
+    public List<EditSpan> gaps() {
         return gaps;
     }
     public String label() {
@@ -34,7 +34,7 @@ public final class Excludes {
             if (i > 0) {
                 text.append(';');
             }
-            text.append(gaps.get(i).gapLabel());
+            text.append(gaps.get(i).spanLabel());
         }
         return text.toString();
     }

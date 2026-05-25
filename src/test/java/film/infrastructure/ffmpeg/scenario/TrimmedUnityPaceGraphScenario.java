@@ -9,23 +9,21 @@ import film.infrastructure.ffmpeg.ExcludeGraph;
 import java.util.List;
 
 /**
- * ExcludeGraph builds trim and concat for multiple kept spans.
+ * Unity-speed trimmed graph maps concat outputs without copy filter.
  */
-public final class ExcludeGraphConcatScenario {
+public final class TrimmedUnityPaceGraphScenario {
     private final boolean matches;
-    public ExcludeGraphConcatScenario() {
+    public TrimmedUnityPaceGraphScenario() {
         final String graph = ExcludeGraph.concat(
             List.of(
-                new SourceSpan(new Second(0), new Second(10), Pace.one()),
-                new SourceSpan(new Second(20), new Second(30), Pace.one())
+                new SourceSpan(new Second(4), new Second(15), Pace.one()),
+                new SourceSpan(new Second(22), new Second(44), Pace.one())
             ),
             MediaContract.defaults(),
-            0,
+            4,
             Pace.one()
         );
-        this.matches = graph.contains("trim=start=0.0:end=10.0")
-            && graph.contains("trim=start=20.0:end=30.0")
-            && graph.contains("concat=n=2");
+        this.matches = graph.contains("[basev]") && graph.contains("[basea]") && !graph.contains("copy");
     }
     public boolean matches() {
         return matches;

@@ -3,6 +3,7 @@ package film.infrastructure.ffmpeg;
 import film.domain.model.Keyframes;
 import film.domain.model.KeptSpans;
 import film.domain.model.MediaContract;
+import film.domain.model.Pace;
 import film.domain.model.RenderProfile;
 import film.domain.model.Second;
 import film.domain.model.SegmentSpec;
@@ -83,17 +84,9 @@ public final class FfmpegClip implements Clip {
         final String id,
         final Path input
     ) {
-        final double factor = spec.pace().constantFactor();
         final double offset = spec.from().amount();
-        final String concat = ExcludeGraph.concat(kept.parts(), contract, offset);
-        final String pace;
-        if (factor == 1.0) {
-            pace = "[basev]copy[outv];[basea]copy[outa]";
-        } else {
-            pace = "[basev]setpts=PTS/" + factor + "[outv];[basea]"
-                + constantAudioChain(factor) + "[outa]";
-        }
-        runTrimmedFilter(spec, input, window, workspace, dest, id, concat + ";" + pace);
+        final String concat = ExcludeGraph.concat(kept.parts(), contract, offset, spec.pace());
+        runTrimmedFilter(spec, input, window, workspace, dest, id, concat, "[basev]", "[basea]");
     }
     private void cutTrimmedKeyframes(
         final SegmentSpec spec,
@@ -106,9 +99,9 @@ public final class FfmpegClip implements Clip {
     ) {
         final Keyframes curve = spec.pace().keyframes();
         final double offset = spec.from().amount();
-        final String concat = ExcludeGraph.concat(kept.parts(), contract, offset);
+        final String concat = ExcludeGraph.concat(kept.parts(), contract, offset, Pace.one());
         final String pace = graphs.complexOn(curve, kept.play(), "basev", "basea");
-        runTrimmedFilter(spec, input, window, workspace, dest, id, concat + ";" + pace);
+        runTrimmedFilter(spec, input, window, workspace, dest, id, concat + ";" + pace, "[outv]", "[outa]");
     }
     private void cutConstant(
         final SegmentSpec spec,
@@ -119,8 +112,8 @@ public final class FfmpegClip implements Clip {
         final String id
     ) {
         final double factor = spec.pace().constantFactor();
-        final String video = ClipCommand.baseVideoFilter(contract) + constantVideoSuffix(factor);
-        final String audio = constantAudioChain(factor);
+        final String video = ClipCommand.baseVideoFilter(contract) + PaceChain.videoSuffix(factor);
+        final String audio = PaceChain.audio(contract, factor);
         final ProcessBuilder builder = baseBuilder(spec, input, span, workspace);
         final List<String> command = builder.command();
         command.add("-vf");
@@ -140,7 +133,7 @@ public final class FfmpegClip implements Clip {
     ) {
         final Keyframes curve = spec.pace().keyframes();
         final String graph = graphs.complex(curve, span);
-        runTrimmedFilter(spec, input, span, workspace, dest, id, graph);
+        runTrimmedFilter(spec, input, span, workspace, dest, id, graph, "[outv]", "[outa]");
     }
     private void runTrimmedFilter(
         final SegmentSpec spec,
@@ -149,7 +142,9 @@ public final class FfmpegClip implements Clip {
         final Path workspace,
         final Path dest,
         final String id,
-        final String graph
+        final String graph,
+        final String video,
+        final String audio
     ) {
         final ProcessBuilder builder = new ProcessBuilder(
             "ffmpeg",
@@ -165,9 +160,9 @@ public final class FfmpegClip implements Clip {
         command.add("-filter_complex");
         command.add(graph);
         command.add("-map");
-        command.add("[outv]");
+        command.add(video);
         command.add("-map");
-        command.add("[outa]");
+        command.add(audio);
         ClipCommand.encodeTail(command, profile, dest);
         ffmpeg.run(builder, "cut-" + id, "cut " + id);
     }
@@ -197,30 +192,5 @@ public final class FfmpegClip implements Clip {
         System.out.println(
             "warning: ffmpeg has no rubberband filter, keyframe clip " + id + " uses stepped atempo audio"
         );
-    }
-    private static String constantVideoSuffix(final double factor) {
-        if (factor == 1.0) {
-            return "";
-        }
-        return ",setpts=PTS/" + factor;
-    }
-    private String constantAudioChain(final double factor) {
-        if (factor == 1.0) {
-            return ClipCommand.audioResample(contract);
-        }
-        final StringBuilder chain = new StringBuilder(ClipCommand.audioResample(contract));
-        double left = factor;
-        while (left > 2.0) {
-            chain.append(",atempo=2.0");
-            left /= 2.0;
-        }
-        while (left < 0.5) {
-            chain.append(",atempo=0.5");
-            left /= 0.5;
-        }
-        if (Math.abs(left - 1.0) > 0.001) {
-            chain.append(",atempo=").append(left);
-        }
-        return chain.toString();
     }
 }

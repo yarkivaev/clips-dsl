@@ -7,8 +7,9 @@ import film.domain.model.AtSpan;
 import film.domain.model.Cut;
 import film.domain.model.CutEnd;
 import film.domain.model.Edits;
-import film.domain.model.ExcludeSpan;
+import film.domain.model.EditSpan;
 import film.domain.model.Excludes;
+import film.domain.model.Includes;
 import film.domain.model.GapAt;
 import film.domain.model.GapEnd;
 import film.domain.model.GapSpan;
@@ -106,34 +107,66 @@ public final class YamlDsl implements Dsl {
     }
     @SuppressWarnings("unchecked")
     private static Edits edits(final Map<String, Object> map) {
-        if (!map.containsKey("exclude")) {
+        final boolean hasExclude = map.containsKey("exclude");
+        final boolean hasInclude = map.containsKey("include");
+        if (hasExclude && hasInclude) {
+            throw new IllegalStateException(
+                "clip " + map.get("id") + " cannot set both exclude and include"
+            );
+        }
+        final TrimCap cap = trimmedCap(map, hasExclude || hasInclude);
+        if (!hasExclude && !hasInclude) {
             return Edits.none();
         }
-        final Object raw = map.get("exclude");
+        final Object raw = hasExclude ? map.get("exclude") : map.get("include");
         if (!(raw instanceof List<?> list)) {
-            throw new IllegalStateException("DSL exclude must be a list for clip " + map.get("id"));
+            throw new IllegalStateException(
+                "DSL " + (hasExclude ? "exclude" : "include") + " must be a list for clip " + map.get("id")
+            );
         }
-        final List<ExcludeSpan> gaps = new ArrayList<>();
+        final List<EditSpan> spans = editSpans(list, map.get("id"), hasExclude ? "exclude" : "include");
+        if (hasExclude) {
+            return new Edits(Excludes.of(spans), Includes.none(), cap);
+        }
+        return new Edits(Excludes.none(), Includes.of(spans), cap);
+    }
+    private static TrimCap trimmedCap(
+        final Map<String, Object> map,
+        final boolean trimmed
+    ) {
+        if (!trimmed || !map.containsKey("duration")) {
+            return TrimCap.none();
+        }
+        return TrimCap.of(new Second(asDouble(map, "duration")));
+    }
+    @SuppressWarnings("unchecked")
+    private static List<EditSpan> editSpans(
+        final List<?> list,
+        final Object clipId,
+        final String key
+    ) {
+        final List<EditSpan> spans = new ArrayList<>();
         for (final Object item : list) {
-            if (!(item instanceof Map<?, ?> gapMap)) {
+            if (!(item instanceof Map<?, ?> spanMap)) {
                 throw new IllegalStateException(
-                    "exclude entry must be a mapping for clip " + map.get("id")
+                    key + " entry must be a mapping for clip " + clipId
                 );
             }
-            gaps.add(exclude((Map<String, Object>) gapMap, map.get("id")));
+            spans.add(editSpan((Map<String, Object>) spanMap, clipId, key));
         }
-        final TrimCap cap = map.containsKey("duration")
-            ? TrimCap.of(new Second(asDouble(map, "duration")))
-            : TrimCap.none();
-        return new Edits(Excludes.of(gaps), cap);
+        return spans;
     }
-    private static ExcludeSpan exclude(final Map<String, Object> map, final Object clipId) {
+    private static EditSpan editSpan(
+        final Map<String, Object> map,
+        final Object clipId,
+        final String key
+    ) {
         final boolean hasFrom = map.containsKey("from");
         final boolean hasTo = map.containsKey("to");
         final boolean hasDuration = map.containsKey("duration");
         if (hasTo && hasDuration) {
             throw new IllegalStateException(
-                "exclude cannot set both to and duration for clip " + clipId
+                key + " cannot set both to and duration for clip " + clipId
             );
         }
         final GapEnd end = hasTo
@@ -141,10 +174,23 @@ public final class YamlDsl implements Dsl {
             : hasDuration
                 ? new GapSpan(new Second(seconds(map.get("duration"), "duration", clipId)))
                 : WindowStop.INSTANCE;
+        final Pace pace = editPace(map, clipId, key);
         if (hasFrom) {
-            return new ExcludeSpan(new Second(seconds(map.get("from"), "from", clipId)), end);
+            return new EditSpan(new Second(seconds(map.get("from"), "from", clipId)), end, pace);
         }
-        return new ExcludeSpan(end);
+        return new EditSpan(end, pace);
+    }
+    private static Pace editPace(final Map<String, Object> map, final Object clipId, final String key) {
+        if (!map.containsKey("speed")) {
+            return Pace.one();
+        }
+        final Object raw = map.get("speed");
+        if (raw instanceof Number number) {
+            return new Pace(number.doubleValue());
+        }
+        throw new IllegalStateException(
+            key + " speed must be a number for clip " + clipId
+        );
     }
     private static Pace pace(final Map<String, Object> map) {
         if (!map.containsKey("speed")) {
@@ -232,9 +278,6 @@ public final class YamlDsl implements Dsl {
         final boolean hasTo = map.containsKey("to");
         final boolean hasDuration = map.containsKey("duration");
         if (edits.trimmed()) {
-            if (hasTo && hasDuration) {
-                return new AtSecond(new Second(asDouble(map, "to")));
-            }
             if (hasTo) {
                 return new AtSecond(new Second(asDouble(map, "to")));
             }

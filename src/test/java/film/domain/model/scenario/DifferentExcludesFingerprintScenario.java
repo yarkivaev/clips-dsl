@@ -3,7 +3,8 @@ package film.domain.model.scenario;
 import film.domain.model.AtSecond;
 import film.domain.model.Cut;
 import film.domain.model.Edits;
-import film.domain.model.ExcludeSpan;
+import film.domain.model.EditSpan;
+import film.domain.model.Includes;
 import film.domain.model.Excludes;
 import film.domain.model.Fingerprint;
 import film.domain.model.GapSpan;
@@ -35,7 +36,8 @@ public final class DifferentExcludesFingerprintScenario {
                 new AtSecond(end),
                 Pace.one(),
                 new Edits(
-                    Excludes.of(List.of(new ExcludeSpan(new Second(5), new GapSpan(new Second(5))))),
+                    Excludes.of(List.of(new EditSpan(new Second(5), new GapSpan(new Second(5))))),
+                    Includes.none(),
                     TrimCap.none()
                 )
             )

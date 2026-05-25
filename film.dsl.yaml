@@ -71,3 +71,78 @@ clips:
     speed: 2
   - id: Встретили туристов
     source: 23
+    from: 0:04
+    to: 02:01
+    include:
+      - from: 0:15.5
+        to: 0:22
+      - from: 0:44
+        to: 0:51
+      - from: 1:04
+  - id: Собираем вещи
+    source: 25
+    to: 4:00
+    speed: 10
+  - id: Собираемся утром второго дня
+    source: 25
+    from: 4:00
+    speed: 2
+  - id: Выбираемся с места первой стоянки
+    source: 26
+    include:
+      - from: 1:27
+        to: 1:31
+      - from: 1:40
+        to: 1:49
+      - from: 2:20
+        to: 2:50
+        speed: 5
+      - from: 3:00
+        to: 3:07
+      - from: 4:02
+        to: 4:10
+  - id: Выбрались с места первой стоянки
+    source: 29
+    to: 0:20
+  - id: Переезд через жд пути 2
+    source: 31
+    include:
+      - from: 0:08
+        to: 0:27
+      - from: 3:00
+        to: 3:25
+    speed: 5
+  - id: Машины надо не бояться, а кошмарить
+    source: 31
+    from: 3:25 
+    speed:
+      - at: 0
+        speed: 5
+      - at: 0:02
+        speed: 1
+  - id: День 2. Красивый проезд
+    source: 31
+    to: 50
+    speed: 5
+  - id: День 2. Красивый проезд 2
+    source: 35
+    to: 17
+  - id: День 2. Красивый проезд 3
+    source: 37
+    from: 11
+    to: 21
+  - id: День 2. Красивый проезд 4
+    source: 38
+    include:
+      - to: 5
+      - from: 32
+        to: 44
+  - id: Ищем стоянку. День 2
+    source: 43
+    include:
+      - to: 0:10
+      - from: 1:03
+        to: 1:15
+      - from: 2:30
+        to: 2:36
+      - from: 3:37

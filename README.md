@@ -86,6 +86,23 @@ exclude:
     duration: 0:45
 ```
 
+**Include** — opposite of `exclude`: keep only the listed source spans (same fields and time forms). Cannot use `exclude` and `include` on one clip. Overlapping includes are merged when they share the same `speed`. With `include` present, `duration` / clip `speed` / keyframe `at` use the **trimmed** timeline like `exclude`.
+
+Optional **`speed`** on each `include` or `exclude` entry (constant number only) applies to that kept block. It is **multiplied** by the clip-level `speed` (e.g. entry `speed: 2` and clip `speed: 3` → 6×). On `exclude`, `speed` applies to the kept source block **before** that gap.
+
+```yaml
+include:
+  - from: 0:10
+    to: 0:40
+    speed: 2
+  - from: 1:05
+    duration: 0:20
+exclude:
+  - from: 1:00
+    to: 1:30
+    speed: 4
+```
+
 **Speed** — constant or keyframed (linear between points; `at` uses the same time forms as `from` / `to` / `duration`: seconds, `M:SS`, or `H:MM:SS`):
 
 ```yaml

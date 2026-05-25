@@ -3,7 +3,8 @@ package film.domain.model.scenario;
 import film.domain.model.AtSecond;
 import film.domain.model.Cut;
 import film.domain.model.Edits;
-import film.domain.model.ExcludeSpan;
+import film.domain.model.EditSpan;
+import film.domain.model.Includes;
 import film.domain.model.Excludes;
 import film.domain.model.KeptSpans;
 import film.domain.model.Pace;
@@ -30,7 +31,8 @@ public final class KeptSpansOpenToExcludeScenario {
                 new AtSecond(new Second(100)),
                 Pace.one(),
                 new Edits(
-                    Excludes.of(List.of(new ExcludeSpan(new Second(60), WindowStop.INSTANCE))),
+                    Excludes.of(List.of(new EditSpan(new Second(60), WindowStop.INSTANCE))),
+                    Includes.none(),
                     TrimCap.none()
                 )
             )

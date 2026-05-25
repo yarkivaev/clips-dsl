@@ -4,6 +4,9 @@ import film.domain.model.scenario.DifferentExcludesFingerprintScenario;
 import film.domain.model.scenario.KeptSpansAbsoluteExcludeScenario;
 import film.domain.model.scenario.KeptSpansClippedExcludeScenario;
 import film.domain.model.scenario.KeptSpansExcludeScenario;
+import film.domain.model.scenario.KeptSpansIncludeMergeScenario;
+import film.domain.model.scenario.KeptSpansIncludeScenario;
+import film.domain.model.scenario.KeptSpansIncludeSpeedScenario;
 import film.domain.model.scenario.KeptSpansOpenFromExcludeScenario;
 import film.domain.model.scenario.KeptSpansOpenToExcludeScenario;
 import film.domain.model.scenario.KeptSpansTrimCapScenario;
@@ -45,6 +48,30 @@ final class KeptSpansTest {
         assertThat(
             "exclude without to should drop from absolute from through window end",
             new KeptSpansOpenToExcludeScenario().play(),
+            is(20.0)
+        );
+    }
+    @Test
+    void includeSegmentSpeedShortensTrimmedPlay() {
+        assertThat(
+            "include segment speed 2 should halve 20 source seconds to 10 play",
+            new KeptSpansIncludeSpeedScenario().play(),
+            is(10.0)
+        );
+    }
+    @Test
+    void includeKeepsOnlyListedSourceSpans() {
+        assertThat(
+            "include should keep only listed spans totaling 25 seconds",
+            new KeptSpansIncludeScenario().play(),
+            is(25.0)
+        );
+    }
+    @Test
+    void overlappingIncludesMergeIntoOneSpan() {
+        assertThat(
+            "overlapping includes should merge into 20 seconds",
+            new KeptSpansIncludeMergeScenario().play(),
             is(20.0)
         );
     }
